@@ -1,0 +1,384 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "Clientes",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -448,
+        96
+      ],
+      "id": "da335dbe-a654-4c25-a3a7-28c2e7abe222",
+      "name": "Webhook",
+      "webhookId": "85ab9fa1-ea58-47df-a0fa-353ade096c1c"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{$json}}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1120,
+        128
+      ],
+      "id": "f1edbae3-7407-4f7a-afe1-01f3728cb460",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "url": "https://digitalinnovationone.github.io/dio-lab-assistente-investimentos-rpa-n8n/data.csv",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -224,
+        160
+      ],
+      "id": "65805971-a307-490f-a864-b56ceb0ae5f5",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pega o CSV como texto vindo do HTTP Request\nconst csvRaw = $json.data ?? $json.body ?? $json;\nconst text = (typeof csvRaw === \"string\") ? csvRaw : JSON.stringify(csvRaw);\n\nconst lines = text.split(/\\r?\\n/).map(l => l.trim()).filter(Boolean);\nconst headers = lines[0].split(\",\").map(h => h.trim());\n\nconst investimentos = lines.slice(1).map(line => {\n  const cols = line.split(\",\").map(c => c.trim());\n  const obj = {};\n  headers.forEach((h, i) => obj[h] = cols[i] ?? \"\");\n\n  // normaliza mínimo para número\n  obj.minimo = Number(String(obj.minimo).replace(/[^\\d]/g, \"\")) || 0;\n\n  return obj;\n});\n\nreturn [{ json: { investimentos } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -48,
+        160
+      ],
+      "id": "a0dc10d2-f587-47ea-8893-95a6811bc875",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        144,
+        -128
+      ],
+      "id": "f451cc62-3526-468e-a1de-d46b7f2df150",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "const clientes = $json.body.clientes;\nconst investimentos = $json.investimentos;\n\nconst resultado = clientes.map(cliente => {\n\n  // Encontra os investimentos correspondentes ao perfil do cliente\n  const opcoes = investimentos.filter(\n    investimento => investimento.perfil === cliente.perfil\n  );\n\n  // Cria uma lista com os nomes dos investimentos\n  const produtos = opcoes\n    .map(investimento => investimento.produto)\n    .join(\", \");\n\n  // Mensagem personalizada de acordo com o perfil\n  let mensagem;\n\n  if (cliente.perfil === \"Conservador\") {\n    mensagem = `Olá, ${cliente.nome}! 👋\n\nIdentificamos que seu perfil de investidor é Conservador e que você possui um saldo de ${cliente.saldo}.\n\nPara esse perfil, priorizamos opções com foco em segurança e renda fixa.\n\nAlgumas opções encontradas para o seu perfil são: ${produtos}.\n\nEsta é uma simulação educacional baseada nos dados do desafio.`;\n  }\n\n  else if (cliente.perfil === \"Moderado\") {\n    mensagem = `Olá, ${cliente.nome}! 👋\n\nIdentificamos que seu perfil de investidor é Moderado e que você possui um saldo de ${cliente.saldo}.\n\nPara esse perfil, buscamos opções que combinem segurança e potencial de rentabilidade.\n\nAlgumas opções encontradas para o seu perfil são: ${produtos}.\n\nEsta é uma simulação educacional baseada nos dados do desafio.`;\n  }\n\n  else if (cliente.perfil === \"Arrojado\") {\n    mensagem = `Olá, ${cliente.nome}! 👋\n\nIdentificamos que seu perfil de investidor é Arrojado e que você possui um saldo de ${cliente.saldo}.\n\nPara esse perfil, consideramos opções com maior exposição à renda variável e maior potencial de retorno, acompanhadas de maior risco.\n\nAlgumas opções encontradas para o seu perfil são: ${produtos}.\n\nEsta é uma simulação educacional baseada nos dados do desafio.`;\n  }\n\n  return {\n    json: {\n      nome: cliente.nome,\n      email: cliente.email,\n      saldo: cliente.saldo,\n      perfil: cliente.perfil,\n      investimentos: opcoes,\n      mensagem: mensagem\n    }\n  };\n});\n\nreturn resultado;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        288,
+        144
+      ],
+      "id": "5d8650f7-1cd5-4c53-aa3e-8530ad307167",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nreturn items.map(item => {\n  return {\n    json: {\n      nome: item.json.nome,\n      email: item.json.email,\n      saldo: item.json.saldo,\n      perfil: item.json.perfil,\n      investimentos: item.json.investimentos\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        144
+      ],
+      "id": "1dc40ade-2464-4f47-9923-36db0a1c86c7",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-3.5-flash-lite",
+          "mode": "list",
+          "cachedResultName": "models/gemini-3.5-flash-lite"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Você é um assistente de investimentos em uma demonstração educacional.\n\nCrie uma mensagem personalizada para o cliente usando os dados recebidos.\n\nNome: {{ $json.nome }}\nE-mail: {{ $json.email }}\nSaldo: {{ $json.saldo }}\nPerfil: {{ $json.perfil }}\n\nInvestimentos compatíveis:\n{{ JSON.stringify($json.investimentos) }}\n\nRegras:\n- Cumprimente o cliente pelo nome.\n- Considere o perfil do cliente.\n- Considere o saldo informado apenas como contexto.\n- Apresente somente investimentos presentes nos dados recebidos.\n- Informe o valor mínimo e a rentabilidade exatamente como aparecem nos dados.\n- Não invente informações.\n- Não faça cálculos ou conclusões sobre capacidade de investimento.\n- Escreva de forma clara, natural e amigável.\n- Não faça promessas de rentabilidade.\n- Informe que o conteúdo é uma simulação educacional e não constitui uma recomendação financeira profissional.\n- Retorne somente a mensagem que será enviada ao cliente."
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        896,
+        -144
+      ],
+      "id": "c5d189b5-cda8-412c-b287-7644260584d6",
+      "name": "Message a model1",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "FQYfzWUiyhJ37wCu",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const texto = $json.content?.parts\n  ?.find(part => typeof part.text === \"string\")\n  ?.text\n  ?.trim() ?? \"\";\n\nconst cliente = $(\"Code in JavaScript2\").item.json;\n\nreturn {\n  json: {\n    nome: cliente.nome,\n    email: cliente.email,\n    saldo: cliente.saldo,\n    perfil: cliente.perfil,\n    mensagem: texto\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1280,
+        -144
+      ],
+      "id": "1daf1e4e-d64b-49cb-baed-fb1f6baf1703",
+      "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        752,
+        144
+      ],
+      "id": "9587cbb0-a842-43c7-bb4c-785983af1471",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{$json.email}}",
+        "subject": "Informações sobre seus investimentos",
+        "message": "={{$json.mensagem}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        592,
+        -272
+      ],
+      "id": "dc946a34-7ea4-43df-9483-944080a358a8",
+      "name": "Send a message",
+      "webhookId": "232ac13d-344b-405d-b93a-5c9d0dc64014",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "wPHKP0ZEYgdYj3Ms",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "21f966a1-5828-49f3-b64b-f012c17fb8a6",
+              "leftValue": "={{ $json.email }}",
+              "rightValue": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1504,
+        -144
+      ],
+      "id": "f120856a-88d5-4d9f-b51a-e90e4baba850",
+      "name": "If"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        []
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Message a model1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "timezone": "America/Sao_Paulo",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "2f172031-086f-432e-ac12-af20ed6f4bb5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6fe984f46cbe0d1568085aa790d979c3ca17c1d2d4b9162c54d86008688bf030"
+  },
+  "nodeGroups": [],
+  "id": "6v3vquHDFvfTtId3",
+  "tags": []
+}
