@@ -56,3 +56,9 @@ Em um teste utilizando um endereço de e-mail real como destinatário, as 10 men
 - [x] Integração com IA Generativa no N8N
 - [x] Mensagens geradas dinamicamente via LLM
 - [x] Documentação das decisões técnicas
+
+## Demonstração
+
+Vídeo demonstrando o funcionamento do workflow de ponta a ponta:
+
+[▶️ Assistir ao vídeo do workflow](./videos/mvpBootcamp.mp4)
